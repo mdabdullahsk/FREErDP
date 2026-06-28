@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN dpkg --add-architecture i386
 
-# প্রয়োজনীয় টুলস এবং প্যাকেজ ইনস্টল করা
+# প্রয়োজনীয় টুলস, ফায়ারফক্স এবং অন্যান্য প্যাকেজ ইনস্টল করা
 RUN apt update && apt install -y \
     xrdp \
     xfce4 \
@@ -21,6 +21,8 @@ RUN apt update && apt install -y \
     wine \
     wine32 \
     vlc \
+    firefox-esr \
+    htop \
     && apt clean && rm -rf /var/lib/apt/lists/*
 
 # Google Chrome ইনস্টল করা
@@ -28,12 +30,16 @@ RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.d
     apt update && apt install -y ./google-chrome-stable_current_amd64.deb && \
     rm google-chrome-stable_current_amd64.deb
 
-# ডকার স্যান্ডবক্স সমস্যার জন্য ক্রোম কনফিগারেশন পরিবর্তন করা
+# ক্রোমের স্যান্ডবক্স নিষ্ক্রিয় করা (ডকার সামঞ্জস্যতার জন্য)
 RUN sed -i 's|/usr/bin/google-chrome-stable|/usr/bin/google-chrome-stable --no-sandbox|g' /usr/share/applications/google-chrome.desktop
 
 # গুগল ক্রোমকে সিস্টেমের ডিফল্ট ব্রাউজার হিসেবে সেট করা
 RUN update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/google-chrome-stable 200 && \
     update-alternatives --set x-www-browser /usr/bin/google-chrome-stable
+
+# আরডিপি পারফরম্যান্স অপ্টিমাইজেশন (কালার ডেপথ ১৬-বিট করা যাতে ল্যাগ কমে)
+RUN sed -i 's/max_bpp=32/max_bpp=16/' /etc/xrdp/xrdp.ini && \
+    sed -i 's/xserverbpp=24/xserverbpp=16/' /etc/xrdp/xrdp.ini
 
 # নতুন ইউজার 'user' এবং ৪ সংখ্যার পাসওয়ার্ড '1234' সেট করা
 RUN useradd -m -s /bin/bash user && \
@@ -43,14 +49,16 @@ RUN useradd -m -s /bin/bash user && \
 # X11 কনফিগারেশন
 RUN sed -i 's/^allowed_users=.*/allowed_users=anybody/' /etc/X11/Xwrapper.config || echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
 
-# নতুন ইউজারের জন্য XFCE4 সেশন সেটআপ
-RUN echo "startxfce4" > /home/user/.xsession && \
+# ইউজারের জন্য স্টার্টআপ স্ক্রিপ্ট (ল্যাগ কমানোর জন্য কম্পোজিটিং বন্ধ করা হয়েছে)
+RUN echo "xfconf-query -c xfwm4 -p /general/use_compositing -s false" > /home/user/.xsession && \
+    echo "exec startxfce4" >> /home/user/.xsession && \
+    chmod +x /home/user/.xsession && \
     chown user:user /home/user/.xsession
 
 # dbus এর জন্য machine-id তৈরি
 RUN mkdir -p /var/run/dbus && dbus-uuidgen > /var/lib/dbus/machine-id
 
-# XRDP কনফিগারেশন
+# XRDP সেটিংস
 RUN sed -i 's/crypt_level=high/crypt_level=low/' /etc/xrdp/xrdp.ini && \
     sed -i 's/security_layer=negotiate/security_layer=rdp/' /etc/xrdp/xrdp.ini && \
     echo "exec startxfce4" > /etc/xrdp/startwm.sh && chmod +x /etc/xrdp/startwm.sh
