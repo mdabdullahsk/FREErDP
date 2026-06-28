@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN dpkg --add-architecture i386
 
-# প্রয়োজনীয় টুলস এবং প্যাকেজ ইনস্টল করা (Firefox বাদ দেওয়া হয়েছে)
+# প্রয়োজনীয় টুলস এবং প্যাকেজ ইনস্টল করা
 RUN apt update && apt install -y \
     xrdp \
     xfce4 \
@@ -27,6 +27,13 @@ RUN apt update && apt install -y \
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     apt update && apt install -y ./google-chrome-stable_current_amd64.deb && \
     rm google-chrome-stable_current_amd64.deb
+
+# ডকার স্যান্ডবক্স সমস্যার জন্য ক্রোম কনফিগারেশন পরিবর্তন করা
+RUN sed -i 's|/usr/bin/google-chrome-stable|/usr/bin/google-chrome-stable --no-sandbox|g' /usr/share/applications/google-chrome.desktop
+
+# গুগল ক্রোমকে সিস্টেমের ডিফল্ট ব্রাউজার হিসেবে সেট করা
+RUN update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/google-chrome-stable 200 && \
+    update-alternatives --set x-www-browser /usr/bin/google-chrome-stable
 
 # নতুন ইউজার 'user' এবং ৪ সংখ্যার পাসওয়ার্ড '1234' সেট করা
 RUN useradd -m -s /bin/bash user && \
