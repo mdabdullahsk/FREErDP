@@ -3,10 +3,6 @@
 # DBUS সার্ভিস চালু করা
 service dbus start
 
-# সাউন্ডের প্রয়োজন না থাকলে নিচের লাইনটির শুরুতে '#' দিয়ে বন্ধ করে দিতে পারেন। 
-# এটি সার্ভারের প্রসেসরের ওপর চাপ অনেক কমাবে।
-pulseaudio --start --system --disallow-exit --disable-shm --realtime=no
-
 # XRDP সার্ভিস চালু করা
 service xrdp start
 
